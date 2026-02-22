@@ -2,6 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import logging
+import urllib3
+
+# إيقاف تحذيرات SSL (اختياري، لتجنب الرسائل المزعجة)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # إعداد التسجيل (logging) لتتبع الأخطاء
 logging.basicConfig(level=logging.INFO)
@@ -70,7 +74,8 @@ class WebCrawler:
                 continue
 
             try:
-                response = requests.get(current_url, timeout=5)
+                # التعديل: إضافة verify=False لتجاوز التحقق من SSL
+                response = requests.get(current_url, timeout=5, verify=False)
                 if response.status_code != 200:
                     logger.warning(f"فشل في جلب {current_url} - الحالة: {response.status_code}")
                     continue
