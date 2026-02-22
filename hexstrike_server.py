@@ -22,6 +22,7 @@ import argparse
 import json
 import logging
 import os
+import tempfile
 import subprocess
 import sys
 import traceback
@@ -5705,7 +5706,7 @@ class ProcessManager:
 class PythonEnvironmentManager:
     """Manage Python virtual environments and dependencies"""
 
-    def __init__(self, base_dir: str = "/tmp/hexstrike_envs"):
+    def __init__(self, base_dir: str = None):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(exist_ok=True)
 
