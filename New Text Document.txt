@@ -1,0 +1,18 @@
+git add .
+git commit -m "رسالة تصف التغيير الذي قمت به"
+git push
+
+git status
+
+
+Get-Content .\data\scan_results_20260222_014127.json | ConvertFrom-Json | Select-Object -First 2 | Format-List
+
+
+
+dir .\data\*.json
+
+explorer .\data
+
+
+notepad .\data\training_data.json
+
