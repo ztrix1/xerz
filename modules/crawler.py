@@ -74,8 +74,8 @@ class WebCrawler:
                 continue
 
             try:
-                # التعديل: إضافة verify=False لتجاوز التحقق من SSL
-                response = requests.get(current_url, timeout=5, verify=False)
+                # زيادة مهلة الاتصال إلى 15 ثانية لمنع انتهاء المهلة
+                response = requests.get(current_url, timeout=15, verify=False)
                 if response.status_code != 200:
                     logger.warning(f"فشل في جلب {current_url} - الحالة: {response.status_code}")
                     continue
