@@ -2,6 +2,8 @@ import requests
 import json
 import os
 import logging
+import time
+import random
 from urllib.parse import urljoin
 import urllib3
 
@@ -15,14 +17,19 @@ logger = logging.getLogger(__name__)
 class VulnerabilityScanner:
     '''
     ماسح ثغرات أساسي يختبر النماذج بحمولات معروفة (XSS, SQLi).
+    يدعم headers مخصصة وتأخير بين الطلبات.
     '''
-    def __init__(self, forms, base_url=None):
+    def __init__(self, forms, base_url=None, headers=None, delay=1):
         '''
         forms: قائمة النماذج المستخرجة من الزاحف (كل نموذج بصيغة dict)
         base_url: رابط أساسي اختياري إذا لم يكن موجوداً في كل نموذج
+        headers: قاموس يحتوي على headers مخصصة (مثل User-Agent)
+        delay: عدد الثواني للتأخير بين الطلبات (افتراضي 1 ثانية)
         '''
         self.forms = forms
         self.base_url = base_url
+        self.headers = headers or {}
+        self.delay = delay
         self.results = []
         # حمولات XSS أولية
         self.xss_payloads = [
@@ -49,37 +56,35 @@ class VulnerabilityScanner:
 
     def test_xss(self, form):
         '''
-        اختبار نموذج لثغرات XSS.
+        اختبار نموذج لثغرات XSS مع مراعاة التأخير والـ headers.
         '''
         action = form.get('action')
         method = form.get('method', 'GET')
         inputs = form.get('inputs', [])
 
-        # تجاهل النماذج التي لا تحتوي على حقول إدخال
         if not inputs:
             return None
 
-        # تحديد عنوان الـ action الكامل
         if self.base_url and not action.startswith('http'):
             action = urljoin(self.base_url, action)
 
-        # تجربة كل حمولة
         for payload in self.xss_payloads:
-            # بناء البيانات المرسلة
+            # تأخير قبل كل طلب (إذا كان delay > 0)
+            if self.delay > 0:
+                sleep_time = self.delay + random.uniform(0, 0.5)
+                time.sleep(sleep_time)
+
             data = {}
             for inp in inputs:
                 inp_name = inp.get('name')
-                if inp_name:
-                    # إذا كان الحقل من نوع submit، نتركه أو نضيف قيمة افتراضية
-                    if inp.get('type') == 'submit':
-                        continue
+                if inp_name and inp.get('type') != 'submit':
                     data[inp_name] = payload
 
             try:
                 if method.upper() == 'POST':
-                    response = requests.post(action, data=data, timeout=10, verify=False)
+                    response = requests.post(action, data=data, timeout=10, verify=False, headers=self.headers)
                 else:
-                    response = requests.get(action, params=data, timeout=10, verify=False)
+                    response = requests.get(action, params=data, timeout=10, verify=False, headers=self.headers)
 
                 # فحص الاستجابة لوجود علامات XSS
                 if payload in response.text and not response.text.count(payload) < 2:
@@ -105,7 +110,7 @@ class VulnerabilityScanner:
 
     def test_sqli(self, form):
         '''
-        اختبار نموذج لثغرات SQL Injection.
+        اختبار نموذج لثغرات SQL Injection مع مراعاة التأخير والـ headers.
         '''
         action = form.get('action')
         method = form.get('method', 'GET')
@@ -118,6 +123,10 @@ class VulnerabilityScanner:
             action = urljoin(self.base_url, action)
 
         for payload in self.sqli_payloads:
+            if self.delay > 0:
+                sleep_time = self.delay + random.uniform(0, 0.5)
+                time.sleep(sleep_time)
+
             data = {}
             for inp in inputs:
                 inp_name = inp.get('name')
@@ -126,9 +135,9 @@ class VulnerabilityScanner:
 
             try:
                 if method.upper() == 'POST':
-                    response = requests.post(action, data=data, timeout=10, verify=False)
+                    response = requests.post(action, data=data, timeout=10, verify=False, headers=self.headers)
                 else:
-                    response = requests.get(action, params=data, timeout=10, verify=False)
+                    response = requests.get(action, params=data, timeout=10, verify=False, headers=self.headers)
 
                 text_lower = response.text.lower()
                 sql_errors = [
@@ -184,7 +193,7 @@ class VulnerabilityScanner:
         return filepath
 
 if __name__ == "__main__":
-    # نموذج تجريبي
+    # نموذج تجريبي مع headers مخصصة
     test_forms = [
         {
             'action': 'http://testphp.vulnweb.com/search.php?test=query',
@@ -195,7 +204,10 @@ if __name__ == "__main__":
             ]
         }
     ]
-    scanner = VulnerabilityScanner(test_forms)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    scanner = VulnerabilityScanner(test_forms, headers=headers, delay=1)
     results = scanner.scan_all()
     print("نتائج الفحص:", results)
     scanner.save_results("test_scan.json")
