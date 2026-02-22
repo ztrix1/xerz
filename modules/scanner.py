@@ -50,9 +50,35 @@ class VulnerabilityScanner:
             "1' AND '1'='1",
             "1' AND '1'='2"
         ]
+        # تحميل حمولات من ملفات إن وجدت
+        loaded_xss = self.load_payloads('payloads/xss.txt')
+        if loaded_xss:
+            self.xss_payloads = loaded_xss
+            logger.info(f"تم تحميل {len(loaded_xss)} حمولة XSS من ملف.")
+        
+        loaded_sqli = self.load_payloads('payloads/sqli.txt')
+        if loaded_sqli:
+            self.sqli_payloads = loaded_sqli
+            logger.info(f"تم تحميل {len(loaded_sqli)} حمولة SQLi من ملف.")
+        
         # مجلد حفظ النتائج
         self.data_dir = "data"
         os.makedirs(self.data_dir, exist_ok=True)
+
+    def load_payloads(self, filename):
+        '''
+        تحميل الحمولات من ملف نصي.
+        '''
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                payloads = [line.strip() for line in f if line.strip()]
+                return payloads if payloads else None
+        except FileNotFoundError:
+            logger.warning(f"ملف {filename} غير موجود. استخدام الحمولات الافتراضية.")
+            return None
+        except Exception as e:
+            logger.error(f"خطأ في قراءة ملف {filename}: {e}")
+            return None
 
     def test_xss(self, form):
         '''
