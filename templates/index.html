@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HexStrike AI</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        #result { white-space: pre-wrap; background: #f4f4f4; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>HexStrike AI - Web Vulnerability Scanner</h1>
+    <input type="text" id="url" placeholder="URL" value="http://testphp.vulnweb.com">
+    <input type="number" id="max_pages" value="5">
+    <button onclick="scan()">Scan</button>
+    <div id="result"></div>
+    <script>
+        async function scan() {
+            const url = document.getElementById('url').value;
+            const max_pages = document.getElementById('max_pages').value;
+            document.getElementById('result').innerText = 'جاري الفحص...';
+            const response = await fetch('/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url, max_pages})
+            });
+            const data = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
